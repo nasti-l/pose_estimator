@@ -19,6 +19,9 @@ class PostRecordingData(PreRecordingData):
     start_time: str
     end_time: str
     if_corrupted: bool
+
+@dataclass(kw_only=True)
+class RecordingMetaData(PostRecordingData):
     file_location: str | os.PathLike
 
 #TODO change locations to pathlike
@@ -26,6 +29,7 @@ class PostRecordingData(PreRecordingData):
 class StorageManager(ABC):
     def __init__(self, location: str):
         self.location = location
+        os.makedirs(self.location, exist_ok=True)
 
     @abstractmethod
     def write_video_to_storage(self, frames: np.ndarray) -> bool:

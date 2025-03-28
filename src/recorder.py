@@ -8,13 +8,13 @@ from datetime import datetime
 # Responsibility: record
 class VideoRecorder(ABC):
     def __init__(self, fps=60):
-        self.__fps: int = fps
+        self._fps: int = fps
 
     def set_fps(self, fps: int) -> None:
-        self.__fps = fps
+        self._fps = fps
 
     def get_fps(self, fps: int) -> None:
-        self.__fps = fps
+        self._fps = fps
 
     @abstractmethod
     def record_video(self, duration_in_sec: int) -> tuple[np.ndarray, int, int, str, str, bool]:
@@ -47,11 +47,13 @@ class WebCamVideoRecorder(VideoRecorder):
         amount_of_frames = len(frames)
         start_time = datetime.fromtimestamp(start).isoformat()
         end_time = datetime.fromtimestamp(end).isoformat()
-        if_corrupted = self.__validate_video(amount_of_frames, duration_in_sec)
+        if_corrupted = self.__validate_video(fps=fps,
+                                             amount_of_frames=amount_of_frames,
+                                             duration=duration_in_sec)
         return frames, fps, amount_of_frames, start_time, end_time, if_corrupted
 
     def __record_video(self, duration: int) -> tuple[np.ndarray, int, float, float]:
-        fps = self.__fps
+        fps = self._fps
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FPS, fps)
         frames = np.array([])
@@ -69,8 +71,8 @@ class WebCamVideoRecorder(VideoRecorder):
         return frames, fps, start, end
 
 
-    def __validate_video(self, amount_of_frames: int, duration_in_sec: int) -> bool:
-        if duration_in_sec//self.__fps != amount_of_frames:
+    def __validate_video(self, fps: int, amount_of_frames: int, duration: int) -> bool:
+        if duration//self._fps != amount_of_frames:
             return False
         return True
 

@@ -1,33 +1,60 @@
-from recorder import VideoRecorder
-from data_manager import LocalStorageManager, DBManager, PreRecordingData, PostRecordingData
+import logging
+from recorder import WebCamVideoRecorder
+from data_manager import LocalStorageManager, DBManager, PreRecordingData, PostRecordingData, RecordingMetaData
 
 # Responsibility: manage session
 
 class SessionManager:
     def __init__(self):
-        self.__recorder = VideoRecorder()
+        self.__recorder = WebCamVideoRecorder()
         self.__db = DBManager(config="./config.py")
         self.__storage = LocalStorageManager(location='./videos/')
+        self.__last_recording_frames = None
+        self.__last_recording_data = None
 
-    def save_recording(self, video_data: PreRecordingData) -> bool:
-        #TODO: save more relevant info about reason for corruption, expand validation
+    def record_video(self, video_data: PreRecordingData) -> bool:
+        self.__last_recording_frames = None
+        self.__last_recording_data = None
         try:
-            frames, fps, amount_of_frames, start, end, if_corrupted = self.__recorder.record_video(video_data.duration_in_sec)
-            location = self.__storage.write_video_to_storage(frames=frames)
-            video_metadata = PostRecordingData(**video_data.__dict__,
-                                               fps=fps,
-                                               amount_of_frames=amount_of_frames,
-                                               start_time=start,
-                                               end_time=end,
-                                               file_location=location,
-                                               if_corrupted=if_corrupted)
-            self.__db.save_metadata(metadata=video_metadata)
+            self.__last_recording_frames, fps, amount_of_frames, start, end, if_corrupted = self.__recorder.record_video(video_data.duration_in_sec)
+            self.__last_recording_data = PostRecordingData(**video_data.__dict__,
+                                                           fps=fps,
+                                                           amount_of_frames=amount_of_frames,
+                                                           start_time=start,
+                                                           end_time=end,
+                                                           if_corrupted=if_corrupted)
         except Exception as e:
-            print(f"Failed to save recording: {e}")
-            #TODO: separate to cases error handling, check all false returns
+            logging.error(f"Failed to record: {e}")
             return False
         return True
 
+    def save_last_recording(self) -> bool:
+        #TODO: save more relevant info about reason for corruption, expand validation
+        if self.__last_recording_frames is None:
+            logging.error("No recordings available")
+            return False
+        elif self.__last_recording_data is None:
+            logging.error("No recording metadata available")
+            return False
+        try:
+            location = self.__storage.write_video_to_storage(frames=self.__last_recording_frames)
+        except Exception as e:
+            logging.error(f"Failed to write recording to storage: {e}")
+            return False
+        del self.__last_recording_frames
+        self.__last_recording_frames = None
+        logging.info(f"Saved recording to: {location}")
+        recording_metadata = RecordingMetaData(**self.__last_recording_data.__dict__,
+                                               file_location=location)
+        try:
+            self.__db.save_metadata(metadata=recording_metadata)
+        except Exception as e:
+            logging.error(f"Failed writing to DB: {e}")
+            return False
+        logging.info(f"Saved recording metadata to DB: {recording_metadata}")
+        return True
+
+#TODO: add logger
 
 
 
