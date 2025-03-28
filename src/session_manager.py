@@ -8,7 +8,7 @@ class SessionManager:
     def __init__(self):
         self.__recorder = WebCamVideoRecorder()
         self.__db = DBManager(config="./config.py")
-        self.__storage = LocalStorageManager(location='./videos/')
+        self.__storage = LocalStorageManager(location='./output/')
         self.__last_recording_frames = None
         self.__last_recording_data = None
 

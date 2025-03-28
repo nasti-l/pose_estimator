@@ -1,8 +1,8 @@
-from abc import abstractmethod, ABC
 import pandas
 import numpy as np
 import pandas as pd
 
+from abc import abstractmethod, ABC
 from data_manager import LocalStorageManager, DBManager
 from ultralytics import YOLO
 
