@@ -1,7 +1,25 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import numpy as np
+import os
 import pandas
 
+#TODO: check if more metadata is important
+@dataclass(kw_only=True)
+class PreRecordingData:
+   duration_in_sec: int
+   activity: str
+   session: str
+   participant: str
+
+@dataclass(kw_only=True)
+class PostRecordingData(PreRecordingData):
+    fps: int
+    amount_of_frames: int
+    if_corrupted: bool
+    location: str | os.PathLike
+
+#TODO change locations to pathlike
 
 class StorageManager(ABC):
     def __init__(self, location: str):
@@ -39,8 +57,7 @@ class DBManager():
         #TODO create a db if not exists
         pass
 
-    #TODO: create a struct for metadata
-    def save_metadata(self, metadata) -> bool:
+    def save_metadata(self, metadata: PostRecordingData) -> bool:
         pass
 
     def get_id_to_location_map(self, query: str) -> {str:str}:
