@@ -1,7 +1,10 @@
 from abc import abstractmethod, ABC
 import pandas
 import numpy as np
+import pandas as pd
+
 from data_manager import LocalStorageManager, DBManager
+from ultralytics import YOLO
 
 
 class DataProcessor(ABC):
@@ -13,14 +16,22 @@ class DataProcessor(ABC):
         pass
 
 class YoloProcessor(DataProcessor):
+    def __init__(self, storage_manager: LocalStorageManager):
+        super().__init__(storage_manager)
+        self.__model = YOLO("yolo11n-pose.pt")
+
     def process_frames(self, frames: np.ndarray)-> str:
         df = self.__get_pose_estimation(frames)
         return self.__storage_manager.write_dataframe_to_storage(df)
 
     def __get_pose_estimation(self, frames: np.ndarray) -> pandas.DataFrame:
-        #TODO call YOLO
-        pass
-
+        frame_dfs = []
+        results = self.__model(frames)
+        for frame_num, result in enumerate(results):
+            df = result.to_df()
+            df['frame'] = frame_num
+            frame_dfs.append(df)
+        return pd.concat(frame_dfs, ignore_index=True)
 
 class PostProcessorManager():
     def __init__(self, storage_manager: LocalStorageManager, db_manager: DBManager):
