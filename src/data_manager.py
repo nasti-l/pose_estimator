@@ -69,5 +69,9 @@ class DBManager():
 
 #TODO: separate storage relevant for offline and online
 
+#TODO: restructure DB for easier querying
+
+#TODO: separate data_manager to diff modules
+
 
 
