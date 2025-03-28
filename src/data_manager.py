@@ -72,7 +72,7 @@ class LocalStorageManager(StorageManager):
         try:
             num_frames, height, width, channels = frames.shape
             fourcc = cv2.VideoWriter_fourcc(*'FFV1')
-            file_location = (os.path.join(self._output_location, file_name + ".avi"))
+            file_location = (os.path.join(output_folder, file_name + ".avi"))
             out = cv2.VideoWriter(file_location, fourcc, fps, (width, height))
             for frame in frames:
                 out.write(frame)
