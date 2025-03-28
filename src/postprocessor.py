@@ -3,21 +3,23 @@ import numpy as np
 import pandas as pd
 
 from abc import abstractmethod, ABC
-from data_manager import LocalStorageManager, DBManager
+from data_manager import LocalStorageManager
+from db_manager import PostgresDBManager
 from ultralytics import YOLO
 
 
 class DataProcessor(ABC):
-    def __init__(self, storage_manager: LocalStorageManager):
+    def __init__(self, storage_manager: LocalStorageManager, db_manager: PostgresDBManager):
         self.__storage_manager = storage_manager
+        self.__db_manager = PostgresDBManager()
 
     @abstractmethod
     def process_frames(self, frames: np.ndarray) -> pandas.DataFrame:
         pass
 
 class YoloProcessor(DataProcessor):
-    def __init__(self, storage_manager: LocalStorageManager):
-        super().__init__(storage_manager)
+    def __init__(self, storage_manager: LocalStorageManager, db_manager: PostgresDBManager):
+        super().__init__(storage_manager, db_manager)
         self.__model = YOLO("yolo11n-pose.pt")
 
     def process_frames(self, frames: np.ndarray)-> str:
@@ -34,7 +36,7 @@ class YoloProcessor(DataProcessor):
         return pd.concat(frame_dfs, ignore_index=True)
 
 class PostProcessorManager():
-    def __init__(self, storage_manager: LocalStorageManager, db_manager: DBManager):
+    def __init__(self, storage_manager: LocalStorageManager, db_manager: PostgresDBManager):
         self.__storage_manager = storage_manager
         self.__db_manager = db_manager
 
@@ -48,3 +50,14 @@ class PostProcessorManager():
                 self.__db_manager.add_pose_estimation(data_location, id)
 
 #TODO add checking if writing return True
+
+if __name__ == '__main__':
+    import os
+    os.environ["PG_HOST"] = "localhost"
+    os.environ["PG_PORT"] = "5432"
+    os.environ["PG_USER"] = "postgres"
+    os.environ["PG_DBNAME"] = "pose_est_db"
+    os.environ["PG_PASS"] = "1234"
+    db_manager = PostgresDBManager()
+    storage_manager = LocalStorageManager()
+

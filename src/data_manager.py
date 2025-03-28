@@ -58,7 +58,7 @@ class StorageManager(ABC):
         return self._output_location
 
 class LocalStorageManager(StorageManager):
-    def __init__(self, location:str):
+    def __init__(self, location:str = "./output"):
         super().__init__(location)
         pass
 
@@ -67,7 +67,6 @@ class LocalStorageManager(StorageManager):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
         if file_name == "":
-            #TODO update both timestemps for human eye
             file_name = f"recording_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         try:
             num_frames, height, width, channels = frames.shape
@@ -130,29 +129,11 @@ class LocalStorageManager(StorageManager):
             raise e
 
 
-class DBManager:
-    def __init__(self, config: str):
-        self.__init_db(config)
-
-    def __init_db(self, config: str):
-        #TODO create a db if not exists
-        pass
-
-    def save_metadata(self, metadata: PostRecordingData) -> bool:
-        pass
-
-    def get_id_to_location_map(self, query: str) -> {str:str}:
-        pass
-
-    def add_pose_estimation(self, pose_estimation_location: str, id: str):
-        pass
-
 
 #TODO: separate storage relevant for offline and online
 
 #TODO: restructure DB for easier querying
 
-#TODO: separate data_manager to diff modules
 
 
 

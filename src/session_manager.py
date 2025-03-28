@@ -1,13 +1,14 @@
 import logging
 from recorder import WebCamVideoRecorder
-from data_manager import LocalStorageManager, DBManager, PreRecordingData, PostRecordingData, RecordingMetaData
+from data_manager import LocalStorageManager, PreRecordingData, PostRecordingData, RecordingMetaData
+from db_manager import PostgresDBManager
 
 # Responsibility: manage session
 
 class SessionManager:
     def __init__(self):
         self.__recorder = WebCamVideoRecorder()
-        self.__db = DBManager(config="./config.py")
+        self.__db = PostgresDBManager()
         self.__storage = LocalStorageManager(location='./output/')
         self.__last_recording_frames = None
         self.__last_recording_data = None
@@ -58,7 +59,5 @@ class SessionManager:
         return True
 
 #TODO: add logger
-
-
 
 
