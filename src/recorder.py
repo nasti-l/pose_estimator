@@ -56,15 +56,17 @@ class WebCamVideoRecorder(VideoRecorder):
         fps = self._fps
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FPS, fps)
-        frames = np.array([])
+        frames = []
         start = time.time()
 
         while time.time() - start < duration:
             ret, frame = cap.read()
             if not ret:
                 break
-            frames = np.append(frames, frame)
-            time.sleep(1 / fps)  # Control frame rate
+            frames.append(frame)
+            time.sleep(1 / fps)
+
+        frames = np.array(frames) # Control frame rate
 
         end = time.time()
         cap.release()

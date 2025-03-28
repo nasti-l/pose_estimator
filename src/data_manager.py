@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
+
+import cv2
 import numpy as np
 import os
 import pandas
@@ -28,24 +31,45 @@ class RecordingMetaData(PostRecordingData):
 
 class StorageManager(ABC):
     def __init__(self, location: str):
-        self.location = location
-        os.makedirs(self.location, exist_ok=True)
+        self._output_location = location
+        os.makedirs(self._output_location, exist_ok=True)
 
     @abstractmethod
-    def write_video_to_storage(self, frames: np.ndarray) -> bool:
+    def write_video_to_storage(self, frames: np.ndarray, fps: int) -> bool:
         pass
 
     @abstractmethod
     def read_from_storage(self, location: str) -> np.ndarray:
         pass
 
+    def set_output_location(self, location: str | os.PathLike):
+        self._output_location = location
+
+    def get_output_location(self):
+        return self._output_location
+
 class LocalStorageManager(StorageManager):
     def __init__(self, location:str):
         super().__init__(location)
         pass
 
-    def write_video_to_storage(self, frames: np.ndarray) -> str:
-        pass
+    def write_video_to_storage(self, frames: np.ndarray, fps: int, file_name: str = "") -> str:
+        if file_name == "":
+            #TODO update both timestemps for human eye
+            f"recording_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        try:
+            num_frames, height, width, channels = frames.shape
+            fourcc = cv2.VideoWriter_fourcc(*'FFV1')
+            file_location = (os.path.join(self._output_location, file_name + ".avi"))
+            out = cv2.VideoWriter(file_location, fourcc, fps, (width, height))
+            for frame in frames:
+                out.write(frame)
+            out.release()
+        except Exception as e:
+            raise e
+        if not os.path.exists(file_location):
+            raise FileNotFoundError(f"File {file_location} wasn't found")
+        return file_location
 
     def write_dataframe_to_storage(self, data: pandas.DataFrame) -> str:
         pass

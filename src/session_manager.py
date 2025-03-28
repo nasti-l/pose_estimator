@@ -37,7 +37,10 @@ class SessionManager:
             logging.error("No recording metadata available")
             return False
         try:
-            location = self.__storage.write_video_to_storage(frames=self.__last_recording_frames)
+            file_name = f"recording_{self.__last_recording_data.participant}_{self.__last_recording_data.activity}_{self.__last_recording_data.start_time}"
+            location = self.__storage.write_video_to_storage(frames=self.__last_recording_frames,
+                                                             fps=self.__last_recording_data.fps,
+                                                             file_name=file_name)
         except Exception as e:
             logging.error(f"Failed to write recording to storage: {e}")
             return False
