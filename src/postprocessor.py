@@ -59,5 +59,24 @@ if __name__ == '__main__':
     os.environ["PG_DBNAME"] = "pose_est_db"
     os.environ["PG_PASS"] = "1234"
     db_manager = PostgresDBManager()
+    from data_manager import RecordingMetaData
+    video_metadata = RecordingMetaData(
+        # PreRecordingData fields
+        duration_in_sec=120,
+        activity="walking",
+        session_start="2025-03-29 10:00:00",
+        participant="John Doe",
+
+        # PostRecordingData fields
+        fps=30,
+        amount_of_frames=3600,  # 30fps * 120 seconds
+        start_time="2025-03-29 10:05:00",
+        end_time="2025-03-29 10:07:00",
+        if_corrupted=False,
+
+        # RecordingMetaData specific field
+        file_location="/data/videos/walking_session_john_20250329.mp4"
+    )
+    db_manager.save_metadata_for_video(video_metadata)
     storage_manager = LocalStorageManager()
 

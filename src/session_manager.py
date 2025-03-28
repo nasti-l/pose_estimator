@@ -51,7 +51,7 @@ class SessionManager:
         recording_metadata = RecordingMetaData(**self.__last_recording_data.__dict__,
                                                file_location=location)
         try:
-            self.__db.save_metadata(metadata=recording_metadata)
+            self.__db.save_metadata_for_video(metadata=recording_metadata)
         except Exception as e:
             logging.error(f"Failed writing to DB: {e}")
             return False
