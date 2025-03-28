@@ -9,15 +9,17 @@ import pandas
 class PreRecordingData:
    duration_in_sec: int
    activity: str
-   session: str
+   session_start: str
    participant: str
 
 @dataclass(kw_only=True)
 class PostRecordingData(PreRecordingData):
     fps: int
     amount_of_frames: int
+    start_time: str
+    end_time: str
     if_corrupted: bool
-    location: str | os.PathLike
+    file_location: str | os.PathLike
 
 #TODO change locations to pathlike
 
@@ -49,7 +51,7 @@ class LocalStorageManager(StorageManager):
 
 
 
-class DBManager():
+class DBManager:
     def __init__(self, config: str):
         self.__init_db(config)
 

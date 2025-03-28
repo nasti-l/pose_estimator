@@ -12,12 +12,14 @@ class SessionManager:
     def save_recording(self, video_data: PreRecordingData) -> bool:
         #TODO: save more relevant info about reason for corruption, expand validation
         try:
-            frames, fps, amount_of_frames, if_corrupted = self.__recorder.record_video(video_data.duration_in_sec)
-            file_location = self.__storage.write_video_to_storage(frames=frames)
+            frames, fps, amount_of_frames, start, end, if_corrupted = self.__recorder.record_video(video_data.duration_in_sec)
+            location = self.__storage.write_video_to_storage(frames=frames)
             video_metadata = PostRecordingData(**video_data.__dict__,
                                                fps=fps,
                                                amount_of_frames=amount_of_frames,
-                                               location=file_location,
+                                               start_time=start,
+                                               end_time=end,
+                                               file_location=location,
                                                if_corrupted=if_corrupted)
             self.__db.save_metadata(metadata=video_metadata)
         except Exception as e:

@@ -1,10 +1,13 @@
 from session_manager import SessionManager
 from datetime import datetime
 
+from src.data_manager import PreRecordingData
+
+
 def main_loop():
     video_types = {
-        1: {"name": "Calibration", "duration": 10},
-        2: {"name": "A-pose", "duration": 30}
+        1: {"activity": "Calibration", "sec": 10},
+        2: {"activity": "A-pose", "sec": 30}
     }
     session = datetime.now().isoformat()
     session_manager = SessionManager()
@@ -29,15 +32,19 @@ def main_loop():
 
         selected_video = video_types[video_choice]
 
-        print(f"\nPreparing to record {selected_video['name']} video...")
-        print(f"Video duration: {selected_video['duration']} seconds")
+        print(f"\nPreparing to record {selected_video['activity']} video...")
+        print(f"Video duration: {selected_video['sec']} seconds")
         input("Press Enter when you're ready to start recording...")
-        session_manager.save_recording(selected_video['duration'], selected_video['name'], participant_name, session)
+        video_to_record = PreRecordingData(duration_in_sec=selected_video['sec'],
+                                           activity=selected_video['activity'],
+                                           session_start=session,
+                                           participant=participant_name)
+        session_manager.save_recording(video_data=video_to_record)
         print("Recording in progress...")
-        input(f"Press Enter after {selected_video['duration']} seconds of recording.")
+        input(f"Press Enter after {selected_video['sec']} seconds of recording.")
 
         while True:
-            rerecord = input(f"\nAre you satisfied with the {selected_video['name']} video? (yes/no): ").lower().strip()
+            rerecord = input(f"\nAre you satisfied with the {selected_video['activity']} video? (yes/no): ").lower().strip()
             if rerecord in ['yes', 'no']:
                 break
             else:
