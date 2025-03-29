@@ -7,5 +7,4 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 six==1.17.0
 tzdata==2025.2
-uv==0.6.10
-
+ultralytics==8.3.98
