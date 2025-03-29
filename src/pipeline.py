@@ -125,6 +125,12 @@ def video_processing_pipeline():
 
 # Example execution
 if __name__ == "__main__":
+    import os
+    os.environ["PG_HOST"] = "localhost"
+    os.environ["PG_PORT"] = "5432"
+    os.environ["PG_USER"] = "postgres"
+    os.environ["PG_DBNAME"] = "pose_est_db"
+    os.environ["PG_PASS"] = "1234"
     result = video_processing_pipeline.execute_in_process(
         run_config={
             "ops": {
