@@ -1,12 +1,14 @@
-import inspect
 import numpy as np
 import pandas as pd
-from dagster import op, job, Out, ResourceDefinition, DynamicOut, DynamicOutput
+from dagster import op, job, In, Out, ResourceDefinition, DynamicOut, DynamicOutput, Definitions, graph
 from ultralytics.engine.results import Results
 from typing import Dict, List, Any
 from postprocessor import YoloProcessor
 from db_manager import PostgresDBManager
 from storage_manager import LocalStorageManager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 db = ResourceDefinition(
     lambda _: PostgresDBManager()
@@ -21,9 +23,12 @@ pose_extractor = ResourceDefinition(
 
 @op(
     required_resource_keys={"db"},
+    config_schema={"range_start": str, "range_end": str},
     out=Out(Dict[str, str])
 )
-def get_video_locations(context, range_start: str, range_end: str) -> Dict[str, str]:
+def get_video_locations(context) -> Dict[str, str]:
+    range_start = context.op_config["range_start"]
+    range_end = context.op_config["range_end"]
     return context.resources.db.get_all_recordings_in_time_range(start_time=range_start,
                                         end_time=range_end)
 
@@ -39,7 +44,7 @@ def extract_frames(context, video_location: str) -> np.ndarray:
     out=Out(List[Results])
 )
 def get_pose_estimations(context, frames: np.ndarray) -> List[Results]:
-    return context.resources.pose_extractor.extract(frames)
+    return context.resources.pose_extractor.process(frames)
 
 @op(
     required_resource_keys={"pose_extractor"},
@@ -47,13 +52,6 @@ def get_pose_estimations(context, frames: np.ndarray) -> List[Results]:
 )
 def yolo_results_to_dataframe(context, yolo_results: List[Results]) -> pd.DataFrame:
     return context.resources.pose_extractor.frames_results_to_video_df(yolo_results)
-
-
-@op(out=Out(Any))
-def process_yolo_results_alternative(context, yolo_results: List[Results]) -> Any:
-    yolo_results = "Something"
-    #TODO: visualise results
-    return yolo_results
 
 @op(out=DynamicOut())
 def split_video_locations(videos_to_process: Dict[str, str]):
@@ -63,19 +61,17 @@ def split_video_locations(videos_to_process: Dict[str, str]):
             mapping_key=video_id
         )
 
+@op(out={"video_id": Out(str), "location": Out(str)})
+def unpack_video_data(video_data: dict):
+    return video_data["video_id"], video_data["location"]
+
+
 @op(
     required_resource_keys={"storage"},
     out=Out(str)
 )
 def save_dataframe_to_storage(context, df: pd.DataFrame) -> str:
     return context.resources.storage.write_dataframe_to_storage(df)
-
-@op(
-    required_resource_keys={"storage"},
-    out=Out(str)
-)
-def save_image_to_storage(context, image: np.ndarray) -> str:
-    return context.resources.storage.write_image_to_storage(image)
 
 @op(required_resource_keys={"db"})
 def log_result_for_video_to_db(context, result_location: str, process_description: str, video_id: str):
@@ -84,60 +80,50 @@ def log_result_for_video_to_db(context, result_location: str, process_descriptio
         results_location=result_location,
         video_id=video_id)
 
+@op(out=Out(str))
+def get_yolo_process_description() -> str:
+    return "YOLO Pose Extraction"
+
+@graph(ins={"video_data": In(dict)})
+def process_single_video_graph(video_data):
+    video_id, location = unpack_video_data(video_data)
+    frames = extract_frames(video_location=location)
+    yolo_results = get_pose_estimations(frames)
+    df = yolo_results_to_dataframe(yolo_results)
+    result_path = save_dataframe_to_storage(df)
+    log_result_for_video_to_db(
+        result_location=result_path,
+        process_description=get_yolo_process_description(),
+        video_id=video_id,
+    )
+
 @job(
     resource_defs={
-    "db": db,
-    "storage": storage,
-    "pose_extractor": pose_extractor,
-})
-def video_processing_pipeline():
-    video_map = get_video_locations()
-    video_tasks = split_video_locations(video_map)
+        "db": db,
+        "storage": storage,
+        "pose_extractor": pose_extractor,
+    }
+)
+def video_processing_job():
+    video_locations = get_video_locations()
+    split = split_video_locations(video_locations)
 
-    def process_video_yolo(video_task):
-        video_id = video_task["video_id"]
-        location = video_task["location"]
+    split.map(process_single_video_graph)
 
-        frames = extract_frames(location)
-        yolo_results = get_pose_estimations(frames)
-
-        df = yolo_results_to_dataframe(yolo_results)
-        df_location = save_dataframe_to_storage(df)
-        log_result_for_video_to_db( df_location, inspect.currentframe().f_code.co_name, video_id)
-
-        return {"df_location": df_location}
-
-    def process_video_yolo_visualise(video_task):
-        video_id = video_task["video_id"]
-        location = video_task["location"]
-
-        frames = extract_frames(location)
-        yolo_results = get_pose_estimations(frames)
-
-        images = process_yolo_results_alternative(yolo_results)
-        images_location = save_image_to_storage(images)  #TODO save many
-        log_result_for_video_to_db( images_location, inspect.currentframe().f_code.co_name, video_id)
-
-        return {"images_location": images_location}
-
-    video_tasks.map(process_video_yolo)
-
+defs = Definitions(
+    jobs=[video_processing_job],
+    resources={"db": db, "storage": storage, "pose_extractor": pose_extractor}
+)
 
 # Example execution
 if __name__ == "__main__":
-    import os
-    os.environ["PG_HOST"] = "localhost"
-    os.environ["PG_PORT"] = "5432"
-    os.environ["PG_USER"] = "postgres"
-    os.environ["PG_DBNAME"] = "pose_est_db"
-    os.environ["PG_PASS"] = "1234"
-    result = video_processing_pipeline.execute_in_process(
+    result = video_processing_job.execute_in_process(
         run_config={
             "ops": {
                 "get_video_locations": {
-                    "inputs": {
-                        "start_date": "2025-03-01",
-                        "end_date": "2025-03-30"
+                    "config": {
+                        "range_start": "2025-03-01T00:00:00",
+                        "range_end": "2025-04-30T00:00:00"
                     }
                 }
             }
