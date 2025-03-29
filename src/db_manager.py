@@ -1,8 +1,6 @@
-import logging
 import os
 import psycopg2
 from abc import ABC, abstractmethod
-
 from data_manager import RecordingMetaData
 
 class DBManager(ABC):
@@ -12,7 +10,7 @@ class DBManager(ABC):
         pass
 
     @abstractmethod
-    def extract_video_locations(self, query: str) -> {str:str}:
+    def get_recordings_by_time_range(self, start_time: str, end_time: str) -> dict[str, str]:
         pass
 
     @abstractmethod
@@ -136,8 +134,20 @@ class PostgresDBManager(DBManager):
         except Exception as e:
             raise e
 
-    def extract_video_locations(self, query: str) -> {str: str}:
-        pass
+    def get_recordings_by_time_range(self, start_time: str, end_time: str) -> dict[str, str]:
+        try:
+            cursor = self.__connect()
+            sql_query = """
+                SELECT id::text, video_path 
+                FROM recordings 
+                WHERE start_time >= %s AND end_time <= %s
+            """
+            data = (start_time, end_time)
+            self.__run_query(sql_query=sql_query, data=data)
+            results = {row[0]: row[1] for row in cursor.fetchall()}
+            return results
+        except Exception as e:
+            raise e
 
     def update_results_for_video(self, results_location: str, video_id: str):
         pass
