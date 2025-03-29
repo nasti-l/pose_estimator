@@ -15,7 +15,7 @@ class YoloProcessor:
         self.__model = YOLO("yolo11n-pose.pt")
 
     def process(self, data: np.ndarray) -> List[Results]:
-        return self.__model(data)
+        return self.__model([_ for _ in data])
 
     def frames_results_to_video_df(self, results: List[Results]) -> pandas.DataFrame:
         frame_dfs = []

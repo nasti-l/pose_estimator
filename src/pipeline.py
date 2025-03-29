@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from dagster import op, job, In, Out, ResourceDefinition, DynamicOut, DynamicOutput, Definitions, graph
 from ultralytics.engine.results import Results
-from typing import Dict, List, Any
+from typing import Dict, List
 from postprocessor import YoloProcessor
 from db_manager import PostgresDBManager
 from storage_manager import LocalStorageManager
