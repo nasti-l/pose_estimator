@@ -30,7 +30,6 @@ class SessionManager:
         return True
 
     def save_last_recording(self) -> bool:
-        #TODO: save more relevant info about reason for corruption, expand validation
         if self.__last_recording_frames is None:
             logging.error("No recordings available")
             return False

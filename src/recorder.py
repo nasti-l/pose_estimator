@@ -74,10 +74,7 @@ class WebCamVideoRecorder(VideoRecorder):
 
 
     def __validate_video(self, fps: int, amount_of_frames: int, duration: int) -> bool:
-        if duration//self._fps != amount_of_frames:
+        if duration//fps != amount_of_frames:
             return False
         return True
 
-#TODO: check if there is any other reason for corruption
-
-#TODO: better error handling

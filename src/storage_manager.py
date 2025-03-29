@@ -9,7 +9,6 @@ import pandas
 import pandas as pd
 
 
-#TODO: check if more metadata is important
 @dataclass(kw_only=True)
 class PreRecordingData:
    duration_in_sec: int
@@ -139,11 +138,6 @@ class LocalStorageManager(StorageManager):
             return df
         except Exception as e:
             raise e
-
-
-
-#TODO: separate storage relevant for offline and online
-
 
 
 
