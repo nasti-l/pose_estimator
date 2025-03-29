@@ -68,14 +68,14 @@ def split_video_locations(videos_to_process: Dict[str, str]):
     out=Out(str)
 )
 def save_dataframe_to_storage(context, df: pd.DataFrame) -> str:
-    return context.resources.local_storage.write_dataframe_to_storage(df)
+    return context.resources.storage.write_dataframe_to_storage(df)
 
 @op(
     required_resource_keys={"storage"},
     out=Out(str)
 )
 def save_image_to_storage(context, image: np.array) -> str:
-    return context.resources.local_storage.write_image_to_storage(image)
+    return context.resources.storage.write_image_to_storage(image)
 
 @op(required_resource_keys={"db"})
 def log_result_for_video_to_db(context, result_location: str, process_description: str, video_id: str):
@@ -86,8 +86,8 @@ def log_result_for_video_to_db(context, result_location: str, process_descriptio
 
 @job(
     resource_defs={
-    "postgres_db": db,
-    "local_storage": storage,
+    "db": db,
+    "storage": storage,
     "pose_extractor": pose_extractor,
 })
 def video_processing_pipeline():
@@ -131,7 +131,7 @@ if __name__ == "__main__":
                 "get_video_locations": {
                     "inputs": {
                         "start_date": "2025-03-01",
-                        "end_date": "2025-03-29"
+                        "end_date": "2025-03-30"
                     }
                 }
             }
