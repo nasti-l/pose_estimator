@@ -2,7 +2,7 @@ import logging
 import os
 import psycopg2
 from abc import ABC, abstractmethod
-from storage_manager import RecordingMetaData
+from src.storage_manager import RecordingMetaData
 
 class DBManager(ABC):
 

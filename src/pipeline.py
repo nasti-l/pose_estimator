@@ -3,10 +3,12 @@ import pandas as pd
 from dagster import op, job, In, Out, ResourceDefinition, DynamicOut, DynamicOutput, Definitions, graph
 from ultralytics.engine.results import Results
 from typing import Dict, List
-from postprocessor import YoloProcessor
-from db_manager import PostgresDBManager
-from storage_manager import LocalStorageManager
+from src.postprocessor import YoloProcessor
+from src.db_manager import PostgresDBManager
+from src.storage_manager import LocalStorageManager
 from dotenv import load_dotenv
+from datetime import datetime
+
 
 load_dotenv()
 
@@ -65,13 +67,15 @@ def split_video_locations(videos_to_process: Dict[str, str]):
 def unpack_video_data(video_data: dict):
     return video_data["video_id"], video_data["location"]
 
-
 @op(
     required_resource_keys={"storage"},
     out=Out(str)
 )
-def save_dataframe_to_storage(context, df: pd.DataFrame) -> str:
-    return context.resources.storage.write_dataframe_to_storage(df)
+def save_dataframe_to_storage(context, df: pd.DataFrame, video_id: str, process_description: str) -> str:
+    timestamp = datetime.now().isoformat(timespec="seconds").replace(":", "-")
+    description_clean = process_description.replace(" ", "_")
+    filename = f"{timestamp}_{video_id}_{description_clean}"
+    return context.resources.storage.write_dataframe_to_storage(data=df, file_name=filename)
 
 @op(required_resource_keys={"db"})
 def log_result_for_video_to_db(context, result_location: str, process_description: str, video_id: str):
@@ -90,10 +94,13 @@ def process_single_video_graph(video_data):
     frames = extract_frames(video_location=location)
     yolo_results = get_pose_estimations(frames)
     df = yolo_results_to_dataframe(yolo_results)
-    result_path = save_dataframe_to_storage(df)
+    desc = get_yolo_process_description()
+    result_path = save_dataframe_to_storage(df=df,
+                                            process_description=desc,
+                                            video_id=video_id)
     log_result_for_video_to_db(
         result_location=result_path,
-        process_description=get_yolo_process_description(),
+        process_description=desc,
         video_id=video_id,
     )
 
@@ -114,18 +121,3 @@ defs = Definitions(
     jobs=[video_processing_job],
     resources={"db": db, "storage": storage, "pose_extractor": pose_extractor}
 )
-
-# Example execution
-if __name__ == "__main__":
-    result = video_processing_job.execute_in_process(
-        run_config={
-            "ops": {
-                "get_video_locations": {
-                    "config": {
-                        "range_start": "2025-03-01T00:00:00",
-                        "range_end": "2025-04-30T00:00:00"
-                    }
-                }
-            }
-        }
-    )

@@ -28,7 +28,6 @@ class PostRecordingData(PreRecordingData):
 class RecordingMetaData(PostRecordingData):
     file_location: str | os.PathLike
 
-#TODO change locations to pathlike
 
 class StorageManager(ABC):
     def __init__(self, location: str):

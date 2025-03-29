@@ -1,9 +1,7 @@
 import logging
-from recorder import WebCamVideoRecorder
-from storage_manager import LocalStorageManager, PreRecordingData, PostRecordingData, RecordingMetaData
-from db_manager import PostgresDBManager
-
-# Responsibility: manage session
+from src.recorder import WebCamVideoRecorder
+from src.storage_manager import LocalStorageManager, PreRecordingData, PostRecordingData, RecordingMetaData
+from src.db_manager import PostgresDBManager
 
 class SessionManager:
     def __init__(self):
@@ -56,7 +54,5 @@ class SessionManager:
             return False
         logging.info(f"Saved recording metadata to DB: {recording_metadata}")
         return True
-
-#TODO: add logger
 
 

@@ -1,10 +1,11 @@
-from session_manager import SessionManager
+from src.session_manager import SessionManager
 from datetime import datetime
 from src.storage_manager import PreRecordingData
+from dotenv import load_dotenv
 
 def main_loop():
     video_types = {
-        1: {"activity": "Calibration", "sec": 1},
+        1: {"activity": "Calibration", "sec": 10},
         2: {"activity": "A-pose", "sec": 30}
     }
     choices = list(video_types.keys()) + [(len(video_types)+1)]
@@ -60,11 +61,5 @@ def main_loop():
 
 
 if __name__ == "__main__":
-    #TODO handle credentials
-    import os
-    os.environ["PG_HOST"] = "localhost"
-    os.environ["PG_PORT"] = "5432"
-    os.environ["PG_USER"] = "postgres"
-    os.environ["PG_DBNAME"] = "pose_est_db"
-    os.environ["PG_PASS"] = "1234"
+    load_dotenv()
     main_loop()

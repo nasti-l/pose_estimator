@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 
-# Responsibility: record
 class VideoRecorder(ABC):
     def __init__(self, fps=60):
         self._fps: int = fps
@@ -13,8 +12,8 @@ class VideoRecorder(ABC):
     def set_fps(self, fps: int) -> None:
         self._fps = fps
 
-    def get_fps(self, fps: int) -> None:
-        self._fps = fps
+    def get_fps(self) -> int:
+        return self._fps
 
     @abstractmethod
     def record_video(self, duration_in_sec: int) -> tuple[np.ndarray, int, int, str, str, bool]:

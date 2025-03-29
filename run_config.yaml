@@ -1,0 +1,5 @@
+ops:
+  get_video_locations:
+    config:
+      range_start: "2025-03-01T00:00:00"
+      range_end: "2025-04-30T00:00:00"
