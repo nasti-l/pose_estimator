@@ -1,6 +1,6 @@
 import logging
 from recorder import WebCamVideoRecorder
-from data_manager import LocalStorageManager, PreRecordingData, PostRecordingData, RecordingMetaData
+from storage_manager import LocalStorageManager, PreRecordingData, PostRecordingData, RecordingMetaData
 from db_manager import PostgresDBManager
 
 # Responsibility: manage session

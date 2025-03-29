@@ -1,7 +1,8 @@
+import logging
 import os
 import psycopg2
 from abc import ABC, abstractmethod
-from data_manager import RecordingMetaData
+from storage_manager import RecordingMetaData
 
 class DBManager(ABC):
 
@@ -10,11 +11,11 @@ class DBManager(ABC):
         pass
 
     @abstractmethod
-    def get_recordings_by_time_range(self, start_time: str, end_time: str) -> dict[str, str]:
+    def get_all_recordings_in_time_range(self, start_time: str, end_time: str) -> dict[str, str]:
         pass
 
     @abstractmethod
-    def update_results_for_video(self, results_location: str, video_id: str):
+    def update_results_for_video(self, processor_name: str, results_location: str, video_id: str):
         pass
 
 class PostgresDBManager(DBManager):
@@ -95,15 +96,18 @@ class PostgresDBManager(DBManager):
                     RETURNING id 
                 """
         self.__cursor.execute(sql_query, (data,))
-        return self.__cursor.fetchone()[0]
+        query_result = self.__cursor.fetchone()
+        if not query_result:
+            raise Exception(f"Failed to insert {column_name}: {data} in table {table_name}")
+        return query_result[0]
 
     def __get_id(self, table_name: str, column_name: str, data: str) -> str:
         sql_query = f"SELECT id FROM {table_name} WHERE {column_name} = %s"
         self.__run_query(sql_query=sql_query, data=(data,))
-        session_result = self.__cursor.fetchone()
-        return session_result[0] if session_result else self.__set_id(data=data,
-                                                                                table_name=table_name,
-                                                                                column_name=column_name)
+        query_result = self.__cursor.fetchone()
+        return query_result[0] if query_result else self.__set_id(data=data,
+                                                                    table_name=table_name,
+                                                                    column_name=column_name)
 
     def __run_query(self, sql_query: str, data: tuple):
         self.__cursor.execute(sql_query, data)
@@ -131,26 +135,50 @@ class PostgresDBManager(DBManager):
                 metadata.start_time, metadata.end_time, metadata.duration_in_sec
             )
             self.__run_query(sql_query=sql_query, data=data)
+            query_result = self.__cursor.fetchone()
+            if not query_result:
+                raise Exception(f"Failed to insert recording's metadata for: {metadata.file_location}")
+            logging.info(f"Successfully saved recording's metadata for: {metadata.file_location}")
         except Exception as e:
             raise e
 
-    def get_recordings_by_time_range(self, start_time: str, end_time: str) -> dict[str, str]:
-        try:
-            cursor = self.__connect()
+    def get_all_recordings_in_time_range(self, start_time: str, end_time: str) -> dict[str, str]:
             sql_query = """
                 SELECT id::text, video_path 
                 FROM recordings 
                 WHERE start_time >= %s AND end_time <= %s
             """
             data = (start_time, end_time)
-            self.__run_query(sql_query=sql_query, data=data)
-            results = {row[0]: row[1] for row in cursor.fetchall()}
+            try:
+                self.__run_query(sql_query=sql_query, data=data)
+            except Exception as e:
+                raise Exception(f"Query failed in attempt to get recordings in time range: {start_time}-{end_time}: {e}")
+            query_results = self.__cursor.fetchall()
+            if not query_results:
+                raise Exception(f"No matching recordings found in time range: {start_time}-{end_time}")
+            results = {row[0]: row[1] for row in query_results}
+            logging.info(f"Successfully retrieved {len(results)} recordings in time range: {start_time}-{end_time}")
             return results
-        except Exception as e:
-            raise e
 
-    def update_results_for_video(self, results_location: str, video_id: str):
-        pass
+    def update_results_for_video(self, processor_name: str, results_location: str, video_id: str):
+        processor_id = self.__get_id(data=processor_name,
+                                   table_name="processors",
+                                   column_name="processor_name")
+        sql_query = """
+            INSERT INTO results (
+                recording_id, processor_id, file_location) 
+            VALUES (%s, %s, %s) RETURNING id
+        """
+        data = (video_id, processor_id, results_location)
+        try:
+            self.__run_query(sql_query=sql_query, data=data)
+        except Exception as e:
+            raise Exception(f"Query failed in attempt to update {processor_name} results for: {results_location}: {e}")
+        query_result = self.__cursor.fetchone()
+        if not query_result:
+            raise Exception(f"Query executed successfully, but no row was inserted in attempt to update {processor_name} results for: {results_location}")
+        logging.info(f"Successfully updated {processor_name} results for: {results_location}")
+
 
     def __del__(self):
         self.__disconnect()

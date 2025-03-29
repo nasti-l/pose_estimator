@@ -100,7 +100,7 @@ class LocalStorageManager(StorageManager):
                 raise ValueError(f"No frames could be read from {location}")
             return np.array(frames)
         except Exception as e:
-            raise e
+            raise Exception(f"Failed to read {location} from storage: {e}")
 
     def write_dataframe_to_storage(self, data: pandas.DataFrame, file_name: str = "") -> str:
         output_folder = os.path.join(self._output_location, 'results')
