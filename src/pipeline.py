@@ -74,7 +74,7 @@ def save_dataframe_to_storage(context, df: pd.DataFrame) -> str:
     required_resource_keys={"storage"},
     out=Out(str)
 )
-def save_image_to_storage(context, image: np.array) -> str:
+def save_image_to_storage(context, image: np.ndarray) -> str:
     return context.resources.storage.write_image_to_storage(image)
 
 @op(required_resource_keys={"db"})
