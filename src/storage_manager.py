@@ -138,5 +138,14 @@ class LocalStorageManager(StorageManager):
         except Exception as e:
             raise e
 
+    def remove_file_if_exists(self, file_path: str | os.PathLike) -> None | str | os.PathLike:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                return file_path
+            else:
+                raise FileNotFoundError(f"File {file_path} not found")
+        except Exception as e:
+            raise Exception(f"Failed to remove file at {file_path}: {e}")
 
 

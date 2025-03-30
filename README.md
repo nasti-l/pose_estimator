@@ -11,14 +11,14 @@ This project implements a modular video processing pipeline for human pose estim
 - Local video and metadata storage
 - PostgreSQL-backed metadata persistence
 - Batch processing of stored videos via Dagster pipeline
-- Pose estimation using Ultralytics YOLOv11
+- Pose estimation using Ultralytics YOLO11n-pose
 - Structured output in Parquet format
 
 ## Technologies Used
 
 - Python 3.10+
 - OpenCV (video capture and processing)
-- Ultralytics YOLOv11 (pose estimation)
+- Ultralytics YOLO11n-pose (pose estimation)
 - Dagster (pipeline orchestration)
 - PostgreSQL (relational database)
 - Pandas and NumPy (data handling)

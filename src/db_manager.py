@@ -112,6 +112,79 @@ class PostgresDBManager(DBManager):
     def __run_query(self, sql_query: str, data: tuple):
         self.__cursor.execute(sql_query, data)
 
+    def get_all_recordings(self) -> dict[str, RecordingMetaData]:
+        sql_query = """
+            SELECT r.id, r.duration_in_sec, a.activity_name, s.session_start, p.participant_name,
+                   r.fps, r.amount_of_frames, r.start_time, r.end_time, r.is_corrupted, r.video_path
+            FROM recordings r
+            LEFT JOIN activities a ON r.activity_id = a.id
+            LEFT JOIN sessions s ON r.session_id = s.id
+            LEFT JOIN participants p ON r.participant_id = p.id
+        """
+        try:
+            self.__run_query(sql_query=sql_query, data=())
+            rows = self.__cursor.fetchall()
+            if not rows:
+                raise Exception("No recordings found in the database.")
+            recordings = {}
+            for row in rows:
+                (
+                    rec_id,
+                    duration_in_sec,
+                    activity,
+                    session_start,
+                    participant,
+                    fps,
+                    amount_of_frames,
+                    start_time,
+                    end_time,
+                    if_corrupted,
+                    file_location,
+                ) = row
+
+                metadata = RecordingMetaData(
+                    duration_in_sec=duration_in_sec,
+                    activity=activity,
+                    session_start=str(session_start),
+                    participant=participant,
+                    fps=fps,
+                    amount_of_frames=amount_of_frames,
+                    start_time=str(start_time),
+                    end_time=str(end_time),
+                    if_corrupted=if_corrupted,
+                    file_location=file_location,
+                )
+                recordings[str(rec_id)] = metadata
+
+            logging.info(f"Successfully fetched {len(recordings)} recordings from the database.")
+            return recordings
+
+        except Exception as e:
+            raise Exception(f"Failed to fetch recordings: {e}")
+
+    def remove_recording_by_id(self, recording_id: str) -> str:
+        sql_delete = "DELETE FROM recordings WHERE id = %s RETURNING video_path"
+        try:
+            self.__run_query(sql_query=sql_delete, data=(recording_id,))
+            result = self.__cursor.fetchone()
+            if not result:
+                raise Exception(f"No recording deleted; id {recording_id} may not exist.")
+            video_path = result[0]
+            logging.info(f"Successfully removed recording with id: {recording_id}")
+            return video_path
+        except Exception as e:
+            raise Exception(f"Failed to remove recording with id {recording_id}: {e}")
+
+    def get_recordings_column_names(self) -> list[str]:
+        try:
+            columns = self.__get_column_order_from_schema()
+            sql_query = f"SELECT {', '.join(columns)} FROM recordings"
+            self.__run_query(sql_query=sql_query, data=())
+            column_names = [desc[0] for desc in self.__cursor.description]
+            return column_names
+        except Exception as e:
+            raise Exception(f"Failed to fetch column names from 'recordings' table: {e}")
+
     def save_metadata_for_video(self, metadata: RecordingMetaData):
         try:
             session_id = self.__get_id(data=metadata.session_start,
@@ -182,4 +255,19 @@ class PostgresDBManager(DBManager):
 
     def __del__(self):
         self.__disconnect()
+
+    def __get_column_order_from_schema(self, table_name="recordings"):
+        try:
+            query = """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = %s
+                ORDER BY ordinal_position;
+            """
+            self.__run_query(query, (table_name,))
+            result = self.__cursor.fetchall()
+            if result:
+                return [row[0] for row in result]
+        except Exception as e:
+            raise Exception(f"Failed to get column order from schema: {e}")
 

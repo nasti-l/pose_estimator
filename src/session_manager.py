@@ -55,4 +55,45 @@ class SessionManager:
         logging.info(f"Saved recording metadata to DB: {recording_metadata}")
         return True
 
+    def get_all_recordings(self) -> dict[str: RecordingMetaData]:
+        try:
+            return self.__parse_recordings_to_table(self.__db.get_all_recordings())
+        except Exception as e:
+            logging.error(f"Failed to get all recordings: {e}")
+            return None
+
+    def remove_recording(self, recording_id: str) -> str | None:
+        try:
+            file_location = self.__db.remove_recording_by_id(recording_id)
+            try:
+                self.__storage.remove_file_if_exists(file_location)
+            except:
+                raise Exception(f"Recording with id {recording_id} removed from DB, but failed to remove from storage.")
+        except Exception as e:
+            logging.error(f"Failed to remove recording: {e}")
+            return None
+        return file_location
+
+    def __parse_recordings_to_table(self, recordings: dict[str: RecordingMetaData]):
+        try:
+            headers = self.__db.get_recordings_column_names()
+        except Exception as e:
+            raise Exception(f"Failed to get headers: {e}")
+        rows = []
+        for rec_id, meta in recordings.items():
+            rows.append([
+                rec_id,
+                meta.session_start,
+                meta.activity,
+                meta.participant,
+                "Yes" if meta.if_corrupted else "No",
+                str(meta.file_location),
+                meta.fps,
+                meta.amount_of_frames,
+                meta.start_time,
+                meta.end_time,
+                meta.duration_in_sec,
+            ])
+        return rows, headers
+
 
