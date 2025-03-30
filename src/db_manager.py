@@ -180,7 +180,7 @@ class PostgresDBManager(DBManager):
             columns = self.__get_column_order_from_schema()
             sql_query = f"SELECT {', '.join(columns)} FROM recordings"
             self.__run_query(sql_query=sql_query, data=())
-            column_names = [desc[0] for desc in self.__cursor.description]
+            column_names = [desc[0].replace("_id","_name") for desc in self.__cursor.description]
             return column_names
         except Exception as e:
             raise Exception(f"Failed to fetch column names from 'recordings' table: {e}")
