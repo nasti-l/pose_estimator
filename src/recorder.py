@@ -34,6 +34,12 @@ class VideoRecorder(ABC):
         pass
 
 
+def validate_video(fps: int, amount_of_frames: int, duration: int) -> bool:
+    if fps * duration != amount_of_frames: # Frame drop
+        return True
+    return False
+
+
 class WebCamVideoRecorder(VideoRecorder):
     def __init__(self):
         super().__init__()
@@ -46,7 +52,7 @@ class WebCamVideoRecorder(VideoRecorder):
         amount_of_frames = len(frames)
         start_time = datetime.fromtimestamp(start).isoformat()
         end_time = datetime.fromtimestamp(end).isoformat()
-        if_corrupted = self.__validate_video(fps=fps,
+        if_corrupted = validate_video(fps=fps,
                                              amount_of_frames=amount_of_frames,
                                              duration=duration_in_sec)
         return frames, fps, amount_of_frames, start_time, end_time, if_corrupted
@@ -58,22 +64,16 @@ class WebCamVideoRecorder(VideoRecorder):
         frames = []
         start = time.time()
 
-        while time.time() - start < duration:
+        num_frames = duration * fps
+        for _ in range(int(num_frames)):
             ret, frame = cap.read()
             if not ret:
                 break
             frames.append(frame)
-            time.sleep(1 / fps)
+            cv2.waitKey(int(1000 / fps))
 
         frames = np.array(frames) # Control frame rate
 
         end = time.time()
         cap.release()
         return frames, fps, start, end
-
-
-    def __validate_video(self, fps: int, amount_of_frames: int, duration: int) -> bool:
-        if duration//fps != amount_of_frames:
-            return False
-        return True
-
