@@ -72,6 +72,12 @@ python -m src.main
 dagster job execute -f src/pipeline.py -j video_processing_job --config run_config.yaml
 ```
 
+5. **Run Tests**
+
+```bash
+pytest
+```
+
 ## PostgreSQL Schema Summary
 
 - **participants**: participant\_name
