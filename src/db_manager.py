@@ -69,6 +69,7 @@ class PostgresDBManager(DBManager):
                 video_path TEXT NOT NULL,
                 fps INT NOT NULL,
                 amount_of_frames INT NOT NULL,
+                frames_lost_on_save INT NOT NULL,
                 start_time TIMESTAMP NOT NULL,
                 end_time TIMESTAMP NOT NULL,
                 duration_in_sec INT NOT NULL
@@ -115,7 +116,7 @@ class PostgresDBManager(DBManager):
     def get_all_recordings(self) -> dict[str, RecordingMetaData]:
         sql_query = """
             SELECT r.id, r.duration_in_sec, a.activity_name, s.session_start, p.participant_name,
-                   r.fps, r.amount_of_frames, r.start_time, r.end_time, r.is_corrupted, r.video_path
+                   r.fps, r.amount_of_frames, r.frames_lost_on_save, r.start_time, r.end_time, r.is_corrupted, r.video_path
             FROM recordings r
             LEFT JOIN activities a ON r.activity_id = a.id
             LEFT JOIN sessions s ON r.session_id = s.id
@@ -136,6 +137,7 @@ class PostgresDBManager(DBManager):
                     participant,
                     fps,
                     amount_of_frames,
+                    frames_lost_on_save,
                     start_time,
                     end_time,
                     if_corrupted,
@@ -149,6 +151,7 @@ class PostgresDBManager(DBManager):
                     participant=participant,
                     fps=fps,
                     amount_of_frames=amount_of_frames,
+                    frames_lost_on_save=frames_lost_on_save,
                     start_time=str(start_time),
                     end_time=str(end_time),
                     if_corrupted=if_corrupted,
@@ -199,13 +202,13 @@ class PostgresDBManager(DBManager):
             sql_query = """
                 INSERT INTO recordings (
                     session_id, activity_id, participant_id, is_corrupted, video_path,
-                    fps, amount_of_frames, start_time, end_time, duration_in_sec
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+                    fps, amount_of_frames, frames_lost_on_save, start_time, end_time, duration_in_sec
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             """
             data = (
                 session_id, activity_id, participant_id, metadata.if_corrupted,
                 str(metadata.file_location), metadata.fps, metadata.amount_of_frames,
-                metadata.start_time, metadata.end_time, metadata.duration_in_sec
+                metadata.frames_lost_on_save, metadata.start_time, metadata.end_time, metadata.duration_in_sec
             )
             self.__run_query(sql_query=sql_query, data=data)
             query_result = self.__cursor.fetchone()

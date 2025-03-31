@@ -27,6 +27,7 @@ class PostRecordingData(PreRecordingData):
 @dataclass(kw_only=True)
 class RecordingMetaData(PostRecordingData):
     file_location: str | os.PathLike
+    frames_lost_on_save: int = 0
 
 
 class StorageManager(ABC):

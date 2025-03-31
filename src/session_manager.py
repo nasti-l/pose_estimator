@@ -42,10 +42,17 @@ class SessionManager:
         except Exception as e:
             logging.error(f"Failed to write recording to storage: {e}")
             return False
+        frames_lost = 0
+        try:
+            frames_lost = self.__validate_writing(frames_lost=frames_lost,
+                                                  location=location)
+        except Exception as e:
+            logging.error(f"Failed to read saved recording from storage: {e}")
         del self.__last_recording_frames
         self.__last_recording_frames = None
         logging.info(f"Saved recording to: {location}")
         recording_metadata = RecordingMetaData(**self.__last_recording_data.__dict__,
+                                               frames_lost_on_save=frames_lost,
                                                file_location=location)
         try:
             self.__db.save_metadata_for_video(metadata=recording_metadata)
@@ -54,6 +61,15 @@ class SessionManager:
             return False
         logging.info(f"Saved recording metadata to DB: {recording_metadata}")
         return True
+
+    def __validate_writing(self, frames_lost: int, location: str) -> int:
+        saved_frames = self.__storage.read_video_from_storage(location=location)
+        new_amount_of_frames = saved_frames.shape[0]
+        if new_amount_of_frames != self.__last_recording_data.amount_of_frames:
+            logging.info(f"Frames were lost during saving")
+            self.__last_recording_data.if_corrupted = True
+            frames_lost = saved_frames - new_amount_of_frames
+        return frames_lost
 
     def get_all_recordings(self) -> dict[str: RecordingMetaData]:
         try:
@@ -90,6 +106,7 @@ class SessionManager:
                 str(meta.file_location),
                 meta.fps,
                 meta.amount_of_frames,
+                meta.frames_lost_on_save,
                 meta.start_time,
                 meta.end_time,
                 meta.duration_in_sec,
