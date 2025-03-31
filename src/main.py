@@ -11,7 +11,7 @@ class Session:
         2: {"activity": "A-pose", "sec": 30}}
         self.__choices = list(self.__video_types.keys()) + [(len(self.__video_types)+1)] + [(len(self.__video_types)+2)]
         self.__session_start = datetime.now().isoformat()
-        self.__session_manager = SessionManager()
+        self.__session_manager = SessionManager(session_start = self.__session_start)
 
     def run(self):
         try:
