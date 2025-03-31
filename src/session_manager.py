@@ -4,12 +4,16 @@ from src.storage_manager import LocalStorageManager, PreRecordingData, PostRecor
 from src.db_manager import PostgresDBManager
 
 class SessionManager:
-    def __init__(self):
+    def __init__(self, session_start: str):
+        self.__session_start = session_start
         self.__recorder = WebCamVideoRecorder()
         self.__db = PostgresDBManager()
         self.__storage = LocalStorageManager(location='./output/')
         self.__last_recording_frames = None
         self.__last_recording_data = None
+
+    def get_session_name(self) -> str:
+        return self.__session_start
 
     def record_video(self, video_data: PreRecordingData) -> bool:
         self.__last_recording_frames = None
