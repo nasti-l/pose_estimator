@@ -49,7 +49,7 @@ class WebCamVideoRecorder(VideoRecorder):
             frames, fps, start, end = self.__record_video(duration=duration_in_sec)
         except:
             raise
-        amount_of_frames = len(frames)
+        amount_of_frames = frames.shape[0]
         start_time = datetime.fromtimestamp(start).isoformat()
         end_time = datetime.fromtimestamp(end).isoformat()
         if_corrupted = validate_video(fps=fps,
@@ -58,22 +58,29 @@ class WebCamVideoRecorder(VideoRecorder):
         return frames, fps, amount_of_frames, start_time, end_time, if_corrupted
 
     def __record_video(self, duration: int) -> tuple[np.ndarray, int, float, float]:
-        fps = self._fps
-        cap = cv2.VideoCapture(0)
-        cap.set(cv2.CAP_PROP_FPS, fps)
+        requested_fps = self._fps
         frames = []
-        start = time.time()
+        try:
+            cap = cv2.VideoCapture(0)
+            cap.set(cv2.CAP_PROP_FPS, requested_fps)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            actual_fps = cap.get(cv2.CAP_PROP_FPS)
 
-        num_frames = duration * fps
-        for _ in range(int(num_frames)):
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frames.append(frame)
-            cv2.waitKey(int(1000 / fps))
+            start = time.time()
+            while time.time() - start <= duration:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frames.append(frame)
+                cv2.waitKey(int(1000 / actual_fps))
 
-        frames = np.array(frames) # Control frame rate
+            frames = np.array(frames)
 
-        end = time.time()
-        cap.release()
-        return frames, fps, start, end
+            end = time.time()
+            cap.release()
+            if len(frames) <= 0:
+                raise Exception("No frames captured")
+        except Exception as e:
+            raise e
+        return frames, int(actual_fps), start, end
