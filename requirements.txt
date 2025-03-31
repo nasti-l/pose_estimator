@@ -12,3 +12,4 @@ dagster-postgres==0.25.0
 dagster==1.9.0
 fastparquet==2024.11.0
 pyarrow==19.0.1
+pytest==8.3.5
